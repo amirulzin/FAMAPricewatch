@@ -1,7 +1,9 @@
-package com.amirulzin.famapricewatch;
+package com.amirulzin.famapricewatch.view.activity;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+
+import com.amirulzin.famapricewatch.R;
 
 public class HomeActivity extends AppCompatActivity {
 
