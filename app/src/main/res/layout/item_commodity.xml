@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    tools:paddingLeft="@dimen/activity_horizontal_margin"
+    tools:paddingRight="@dimen/activity_horizontal_margin">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingBottom="4dp"
+        android:paddingTop="4dp">
+
+        <TextView
+            android:id="@+id/commodityName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="left"
+
+            android:textSize="12sp"
+            tools:text="DAUN SUP/SADRI CINA TEMPATAN TANAH TINGGI" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/commodityUnit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/roundrect_primary"
+                android:paddingBottom="2dp"
+                android:paddingLeft="4dp"
+                android:paddingRight="4dp"
+                android:paddingTop="2dp"
+
+                android:textColor="@color/pmc_white"
+                android:textSize="10sp"
+                tools:text="100 KG" />
+
+            <TextView
+                android:id="@+id/commodityGrade"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
+                android:background="@drawable/roundrect_secondary"
+                android:paddingBottom="2dp"
+                android:paddingLeft="4dp"
+                android:paddingRight="4dp"
+                android:paddingTop="2dp"
+                android:textColor="@color/pmc_white"
+                android:textSize="10sp"
+                tools:text="SEDANG" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/commodityLow"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:background="@color/colorSecondary"
+        android:fontFamily="sans-serif-condensed"
+        android:gravity="center"
+        android:minWidth="40dp"
+        android:paddingLeft="4dp"
+        android:paddingRight="4dp"
+        android:textColor="@color/pmc_white"
+        android:textSize="12sp"
+        tools:text="3100.00" />
+
+    <TextView
+        android:id="@+id/commodityAverage"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:background="@color/colorPrimary"
+        android:fontFamily="sans-serif-condensed"
+        android:gravity="center"
+        android:minWidth="40dp"
+        android:paddingLeft="4dp"
+        android:paddingRight="4dp"
+        android:textColor="@color/pmc_white"
+        android:textSize="12sp"
+        tools:text="3100.00" />
+
+    <TextView
+        android:id="@+id/commodityHigh"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:background="@color/colorTertiary"
+        android:fontFamily="sans-serif-condensed"
+        android:gravity="center"
+        android:minWidth="40dp"
+        android:paddingLeft="4dp"
+        android:paddingRight="4dp"
+        android:textColor="@color/pmc_white"
+        android:textSize="12sp"
+        tools:text="3100.00" />
+
+</LinearLayout>
