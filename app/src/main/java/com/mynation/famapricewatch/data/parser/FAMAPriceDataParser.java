@@ -1,7 +1,9 @@
-package com.amirulzin.famapricewatch.data.parser;
+package com.mynation.famapricewatch.data.parser;
 
-import com.amirulzin.famapricewatch.data.Commodity;
-import com.amirulzin.famapricewatch.data.StateData;
+import android.support.annotation.NonNull;
+
+import com.mynation.famapricewatch.data.Commodity;
+import com.mynation.famapricewatch.data.StateData;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -17,17 +19,23 @@ import java.util.ArrayList;
 public class FAMAPriceDataParser {
 
     private static final boolean LOG_EXCEPTIONS = true;
-    private static final String priceGenerationUrl = "https://sdvi2.fama.gov.my/price/direct/generate.asp?";
     private static final String firstIdentifier = "Pusat :";
     private static final String secondIdentifier = "Nama Varieti";
     private static final String dataTableParentTag = "tbody";
     private static final String dataRowIdentifier = "id";
+    private static final String previousReportIdentifier = "HARGA TERDAHULU";
 
-    public static ArrayList<StateData> parse(String htmlBody) {
+    public static ArrayList<StateData> parse(String htmlBody, FailureListener failureListener) {
         ArrayList<StateTable> dataRows = null;
         try {
             dataRows = mapStateTables(htmlBody);
-        } catch (ParseException | Exception e) {
+        } catch (ParseException e) {
+            if (LOG_EXCEPTIONS) e.printStackTrace();
+            if (e.getReason() == ParseException.Reason.NO_KEY_TABLE || e.getReason() == ParseException.Reason.NO_SECONDKEY_TABLE)
+                if (e.getPreviousUrl() != null && failureListener != null) {
+                    failureListener.onCurrentTableUnavailable(e.getPreviousUrl());
+                }
+        } catch (Exception e) {
             if (LOG_EXCEPTIONS) e.printStackTrace();
         }
         if (dataRows != null) {
@@ -43,10 +51,23 @@ public class FAMAPriceDataParser {
         Document document = Jsoup.parse(htmlBody);
         Element body = document.body();
 
+        //Get past report redirect link if current report has error
+        String pastReportUrl = null;
+        Elements hrefs = body.select("a[href]");
+        for (Element element : hrefs) {
+            String text = element.text();
+            if (text.contains(previousReportIdentifier)) {
+                pastReportUrl = FAMAEndpoint.getPreviousPriceReportUrl(element.attr("href"));
+                break;
+            }
+        }
+
 
         //Gather an insertion first state IDs
         Elements firstIdPoints = body.getElementsContainingOwnText(firstIdentifier);
-        if (firstIdPoints.isEmpty()) throw new ParseException(ParseException.Reason.NO_KEY_TABLE);
+        if (firstIdPoints.isEmpty())
+            throw makeParseException(ParseException.Reason.NO_KEY_TABLE, pastReportUrl);
+
 
         //Prepare output collector
         final ArrayList<StateTable> stateTables = new ArrayList<>(firstIdPoints.size());
@@ -62,9 +83,9 @@ public class FAMAPriceDataParser {
         //Orderly map state data to row elements
         Elements secondIdPoints = body.getElementsContainingOwnText(secondIdentifier);
         if (secondIdPoints.isEmpty())
-            throw new ParseException(ParseException.Reason.NO_SECONDKEY_TABLE);
+            throw makeParseException(ParseException.Reason.NO_SECONDKEY_TABLE, pastReportUrl);
         else if (secondIdPoints.size() != firstIdPoints.size())
-            throw new ParseException(ParseException.Reason.TABLES_SIZE_UNPAIRED);
+            throw makeParseException(ParseException.Reason.TABLES_SIZE_UNPAIRED, pastReportUrl);
 
         for (int i = 0; i < secondIdPoints.size(); i++) {
             final Element idPoint = secondIdPoints.get(i);
@@ -76,6 +97,13 @@ public class FAMAPriceDataParser {
         }
 
         return stateTables;
+    }
+
+    @NonNull
+    private static ParseException makeParseException(ParseException.Reason reason, String pastReportUrl) {
+        ParseException parseException = new ParseException(reason);
+        parseException.setPreviousUrl(pastReportUrl);
+        return parseException;
     }
 
     private static ArrayList<StateData> parseStateDatas(ArrayList<StateTable> stateTables) {
@@ -91,6 +119,10 @@ public class FAMAPriceDataParser {
         return outList;
     }
 
+    public interface FailureListener {
+        void onCurrentTableUnavailable(String previousSuccessfulDataUrl);
+    }
+
     private static class StateTable {
         String stateId;
         Elements rows;
@@ -101,10 +133,6 @@ public class FAMAPriceDataParser {
 
         String getStateId() {
             return stateId;
-        }
-
-        Elements getUnparsedDataRow() {
-            return rows;
         }
 
         void setUnparsedDataTable(Elements unparsedDataRow) {
@@ -125,20 +153,36 @@ public class FAMAPriceDataParser {
                     row.child(0).ownText(),
                     row.child(1).ownText(),
                     row.child(2).ownText(),
-                    (int) Float.parseFloat(row.child(3).ownText()),
-                    (int) Float.parseFloat(row.child(4).ownText()),
-                    (int) Float.parseFloat(row.child(5).ownText())
+                    row.child(3).ownText(),
+                    row.child(4).ownText(),
+                    row.child(5).ownText()
             );
         }
     }
 
     private static class ParseException extends Throwable {
+        private final Reason reason;
+        private String previousUrl;
+
         ParseException(Reason reason) {
             super(reason.name());
+            this.reason = reason;
+        }
+
+        public String getPreviousUrl() {
+            return previousUrl;
+        }
+
+        public void setPreviousUrl(String previousUrl) {
+            this.previousUrl = previousUrl;
+        }
+
+        public Reason getReason() {
+            return reason;
         }
 
         private enum Reason {
-            NULL, EMPTY_BODY, NO_KEY_TABLE, NO_SECONDKEY_TABLE, TABLES_SIZE_UNPAIRED, PARSE_ERROR
+            NULL, EMPTY_BODY, NO_KEY_TABLE, NO_SECONDKEY_TABLE, TABLES_SIZE_UNPAIRED
         }
     }
 }
