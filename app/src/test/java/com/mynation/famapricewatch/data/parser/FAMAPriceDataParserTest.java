@@ -1,7 +1,7 @@
-package com.amirulzin.famapricewatch.data.parser;
+package com.mynation.famapricewatch.data.parser;
 
-import com.amirulzin.famapricewatch.data.StateData;
 import com.google.common.base.Stopwatch;
+import com.mynation.famapricewatch.data.StateData;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -51,7 +51,7 @@ public class FAMAPriceDataParserTest {
         stopwatch.reset();
         stopwatch.start();
 
-        ArrayList<StateData> result = FAMAPriceDataParser.parse(htmlBody);
+        ArrayList<StateData> result = FAMAPriceDataParser.parse(htmlBody, null);
         logger.info("ParseTime: " + stopwatch.toString());
         stopwatch.stop();
 
