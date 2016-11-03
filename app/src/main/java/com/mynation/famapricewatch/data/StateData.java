@@ -1,4 +1,4 @@
-package com.amirulzin.famapricewatch.data;
+package com.mynation.famapricewatch.data;
 
 import java.util.ArrayList;
 

@@ -1,4 +1,4 @@
-package com.amirulzin.famapricewatch.data.parser;
+package com.mynation.famapricewatch.data.parser;
 
 import org.jsoup.nodes.Element;
 
