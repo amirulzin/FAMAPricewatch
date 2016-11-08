@@ -3,8 +3,8 @@ apply plugin: 'com.android.application'
 def signingEnabled = "amirulzin".equalsIgnoreCase(System.getenv("DEV_KEY"))
 if (signingEnabled) apply from: 'signing.gradle'
 
-def fVersionCode = 1
-def fVersionName = "1.0.0"
+def fVersionCode = 2
+def fVersionName = "1.0.1"
 
 android {
     lintOptions {
