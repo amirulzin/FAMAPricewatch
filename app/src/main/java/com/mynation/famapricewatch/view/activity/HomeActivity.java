@@ -2,14 +2,13 @@ package com.mynation.famapricewatch.view.activity;
 
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
-import android.os.Handler;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.ProgressBar;
 import android.widget.Spinner;
 
 import com.mynation.famapricewatch.R;
@@ -22,7 +21,7 @@ import com.mynation.famapricewatch.view.recycler.StateDataAdapter;
 
 import java.util.ArrayList;
 
-public class HomeActivity extends AppCompatActivity implements CommodityDataPresenter.Listener {
+public class HomeActivity extends AppCompatActivity implements CommodityDataPresenter.Listener, SwipeRefreshLayout.OnRefreshListener {
 
     private CommodityUIPresenter uiPresenter;
     private CommodityDataPresenter dataPresenter;
@@ -30,7 +29,7 @@ public class HomeActivity extends AppCompatActivity implements CommodityDataPres
     private ActivityHomeBinding homeBinding;
     private StateDataAdapter recyclerAdapter;
     private ArrayAdapter<String> spinnerAdapter;
-    private ProgressPresenter progressPresenter;
+    private RefreshPresenter refreshPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,16 +37,23 @@ public class HomeActivity extends AppCompatActivity implements CommodityDataPres
         homeBinding = DataBindingUtil.setContentView(this, R.layout.activity_home);
         dataPresenter = new CommodityDataPresenter(getApplicationContext());
         uiPresenter = new CommodityUIPresenter();
-        progressPresenter = new ProgressPresenter(homeBinding.mainProgressBar);
+
+        //SwipeRefresh
+        SwipeRefreshLayout swipeRefreshLayout = homeBinding.swipeRefreshContainer;
+        swipeRefreshLayout.setOnRefreshListener(this);
+        refreshPresenter = new RefreshPresenter(homeBinding.swipeRefreshContainer);
+        dataPresenter.addListener(refreshPresenter);
+
         //Recycler
         RecyclerView recyclerView = homeBinding.mainItemsRV;
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         recyclerAdapter = new StateDataAdapter(new ArrayList<Commodity>(), uiPresenter, dataPresenter);
         recyclerView.setAdapter(recyclerAdapter);
+        dataPresenter.addListener(recyclerAdapter);
 
         //defaults
-        dataPresenter.requestData(FAMAEndpoint.PriceKey.RETAIL);
         dataPresenter.addListener(this);
+        requestData(dataPresenter);
 
         spinnerAdapter = new ArrayAdapter<>(HomeActivity.this, R.layout.spinner_header, android.R.id.text1, dataPresenter.getStateIds());
 
@@ -70,6 +76,10 @@ public class HomeActivity extends AppCompatActivity implements CommodityDataPres
 
     }
 
+    private void requestData(CommodityDataPresenter dataPresenter) {
+        dataPresenter.requestData(FAMAEndpoint.PriceKey.RETAIL);
+    }
+
     @Override
     public void onDataPreload() {
 
@@ -77,13 +87,7 @@ public class HomeActivity extends AppCompatActivity implements CommodityDataPres
 
     @Override
     public void onDataUpdated() {
-        Handler handler = new Handler(getMainLooper());
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                spinnerAdapter.notifyDataSetChanged();
-            }
-        });
+        spinnerAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -103,31 +107,31 @@ public class HomeActivity extends AppCompatActivity implements CommodityDataPres
         super.onPause();
     }
 
-    private static final class ProgressPresenter implements CommodityDataPresenter.Listener {
-        private final ProgressBar progressBar;
+    @Override
+    public void onRefresh() {
+        requestData(dataPresenter);
+    }
 
-        public <V extends ProgressBar> ProgressPresenter(V progressBar) {
-            this.progressBar = progressBar;
+    private static final class RefreshPresenter implements CommodityDataPresenter.Listener {
+        private final SwipeRefreshLayout swipeRefreshLayout;
+
+        public <V extends SwipeRefreshLayout> RefreshPresenter(V swipeRefreshLayout) {
+            this.swipeRefreshLayout = swipeRefreshLayout;
         }
 
         @Override
         public void onDataPreload() {
-            startLoadingIndeterminately();
+            swipeRefreshLayout.setRefreshing(true);
         }
 
         @Override
         public void onDataUpdated() {
-            progressBar.setVisibility(View.GONE);
-        }
-
-        public void startLoadingIndeterminately() {
-            if (progressBar.getVisibility() != View.VISIBLE)
-                progressBar.setVisibility(View.VISIBLE);
+            swipeRefreshLayout.setRefreshing(false);
         }
 
         @Override
         public void onDataError() {
-            progressBar.setVisibility(View.GONE);
+            swipeRefreshLayout.setRefreshing(false);
         }
     }
 
