@@ -65,61 +65,83 @@ public class CommodityDataPresenter implements FAMAPriceDataParser.FailureListen
         //When no cache data during first load
         if (!localCacheState.isCacheReady() && !NetworkUtils.isConnected(appContext)) {
             Toast.makeText(appContext, "Not connected to internet", Toast.LENGTH_SHORT).show();
-            for (final Listener listener : mListeners) {
-                listener.onDataError();
-            }
+            notifyErrors();
             return;
         }
 
-        for (final Listener listener : mListeners) {
-            listener.onDataPreload();
-        }
+        notifyPreloads();
 
         Request.Builder builder = new Request.Builder().get().url(url);
         Call call = client.newCall(builder.build());
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                if (mListeners.size() > 0) {
-                    final Handler handler = new Handler(appContext.getMainLooper());
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            for (final Listener listener : mListeners) {
-                                listener.onDataError();
-                            }
-                        }
-                    });
-
-                }
+                notifyErrors();
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                localCacheState.setCacheReady();
+                if (response.isSuccessful()) {
 
-                String htmlBody = response.body().string();
-                ArrayList<StateData> datas = FAMAPriceDataParser.parse(htmlBody, CommodityDataPresenter.this);
-                stateIds.clear();
-                stateDataHashMap.clear();
-                for (final StateData stateData : datas) {
-                    stateIds.add(stateData.getCentreName());
-                    stateDataHashMap.put(stateData.getCentreName(), stateData);
-                }
+                    localCacheState.setCacheReady();
 
-                if (mListeners.size() > 0) {
-                    final Handler handler = new Handler(appContext.getMainLooper());
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            for (final Listener listener : mListeners) {
-                                listener.onDataUpdated();
-                            }
-                        }
-                    });
-                }
+                    String htmlBody = response.body().string();
+                    ArrayList<StateData> datas = FAMAPriceDataParser.parse(htmlBody, CommodityDataPresenter.this);
+                    stateIds.clear();
+                    stateDataHashMap.clear();
+                    for (final StateData stateData : datas) {
+                        stateIds.add(stateData.getCentreName());
+                        stateDataHashMap.put(stateData.getCentreName(), stateData);
+                    }
+
+                    notifyDataUpdated();
+                } else notifyErrors();
             }
         });
+    }
+
+    private void notifyDataUpdated() {
+        if (mListeners.size() > 0) {
+            final Handler handler = new Handler(appContext.getMainLooper());
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    for (final Listener listener : mListeners) {
+                        listener.onDataUpdated();
+                    }
+                }
+            });
+        }
+    }
+
+    private void notifyPreloads() {
+        if (mListeners.size() > 0) {
+            final Handler handler = new Handler(appContext.getMainLooper());
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    for (final Listener listener : mListeners) {
+                        listener.onDataPreload();
+                    }
+                }
+            });
+        }
+    }
+
+
+    private void notifyErrors() {
+        if (mListeners.size() > 0) {
+            final Handler handler = new Handler(appContext.getMainLooper());
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    for (final Listener listener : mListeners) {
+                        listener.onDataError();
+                    }
+                }
+            });
+
+        }
     }
 
     public void addListener(Listener... listeners) {
