@@ -1,6 +1,7 @@
 package com.mynation.famapricewatch.presenter;
 
 import android.content.Context;
+import android.os.Handler;
 import android.widget.Toast;
 
 import com.mynation.famapricewatch.data.StateData;
@@ -64,6 +65,9 @@ public class CommodityDataPresenter implements FAMAPriceDataParser.FailureListen
         //When no cache data during first load
         if (!localCacheState.isCacheReady() && !NetworkUtils.isConnected(appContext)) {
             Toast.makeText(appContext, "Not connected to internet", Toast.LENGTH_SHORT).show();
+            for (final Listener listener : mListeners) {
+                listener.onDataError();
+            }
             return;
         }
 
@@ -77,9 +81,16 @@ public class CommodityDataPresenter implements FAMAPriceDataParser.FailureListen
             @Override
             public void onFailure(Call call, IOException e) {
                 if (mListeners.size() > 0) {
-                    for (final Listener listener : mListeners) {
-                        listener.onDataError();
-                    }
+                    final Handler handler = new Handler(appContext.getMainLooper());
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            for (final Listener listener : mListeners) {
+                                listener.onDataError();
+                            }
+                        }
+                    });
+
                 }
             }
 
@@ -97,9 +108,15 @@ public class CommodityDataPresenter implements FAMAPriceDataParser.FailureListen
                 }
 
                 if (mListeners.size() > 0) {
-                    for (final Listener listener : mListeners) {
-                        listener.onDataUpdated();
-                    }
+                    final Handler handler = new Handler(appContext.getMainLooper());
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            for (final Listener listener : mListeners) {
+                                listener.onDataUpdated();
+                            }
+                        }
+                    });
                 }
             }
         });
