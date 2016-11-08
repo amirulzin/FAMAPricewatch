@@ -28,9 +28,10 @@ public class LocalCacheState {
 
 
     public void setCacheReady() {
-        cacheReady = true;
-        if (!init)
+        if (!cacheReady) {
+            cacheReady = true;
             getSharedPreferences().edit().putBoolean(cacheStateKey, true).apply();
+        }
     }
 
     private SharedPreferences getSharedPreferences() {

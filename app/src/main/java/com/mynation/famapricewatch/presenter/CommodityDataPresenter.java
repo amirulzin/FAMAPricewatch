@@ -2,6 +2,7 @@ package com.mynation.famapricewatch.presenter;
 
 import android.content.Context;
 import android.os.Handler;
+import android.os.Looper;
 import android.widget.Toast;
 
 import com.mynation.famapricewatch.data.StateData;
@@ -19,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import common.android.util.NetworkUtils;
+import okhttp3.Cache;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
@@ -32,7 +34,7 @@ import okhttp3.Response;
 public class CommodityDataPresenter implements FAMAPriceDataParser.FailureListener, OkCacheControl.NetworkMonitor {
 
     private static final int CACHE_STALE_IN_DAYS = 14;
-    private final OkHttpClient client = OkCacheControl.on(new OkHttpClient().newBuilder()).overrideServerCachePolicy(CACHE_STALE_IN_DAYS, TimeUnit.DAYS).forceCacheWhenOffline(CommodityDataPresenter.this).apply().build();
+    private final OkHttpClient client;
     private final Context appContext;
     private final LocalCacheState localCacheState;
     private HashMap<String, StateData> stateDataHashMap = new HashMap<>(20, .95f);
@@ -42,6 +44,8 @@ public class CommodityDataPresenter implements FAMAPriceDataParser.FailureListen
     public CommodityDataPresenter(final Context applicationContext) {
         this.appContext = applicationContext;
         this.localCacheState = new LocalCacheState(applicationContext);
+        final Cache cache = new Cache(appContext.getCacheDir(), 1024 * 1024);
+        client = OkCacheControl.on(new OkHttpClient().newBuilder()).overrideServerCachePolicy(CACHE_STALE_IN_DAYS, TimeUnit.DAYS).forceCacheWhenOffline(CommodityDataPresenter.this).apply().cache(cache).build();
     }
 
     public HashMap<String, StateData> getStateDatas() {
@@ -62,9 +66,16 @@ public class CommodityDataPresenter implements FAMAPriceDataParser.FailureListen
 
     private void executeRequest(String url) {
 
-        //When no cache data during first load
+        //When no cache data during first install
+
         if (!localCacheState.isCacheReady() && !NetworkUtils.isConnected(appContext)) {
-            Toast.makeText(appContext, "Not connected to internet", Toast.LENGTH_SHORT).show();
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(appContext, "Not connected to internet", Toast.LENGTH_SHORT).show();
+                }
+            });
+
             notifyErrors();
             return;
         }
@@ -81,21 +92,43 @@ public class CommodityDataPresenter implements FAMAPriceDataParser.FailureListen
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                if (response.isSuccessful()) {
 
+                String htmlBody = null;
+
+                if (NetworkUtils.isConnected(appContext) && response.isSuccessful()) {
                     localCacheState.setCacheReady();
+                    htmlBody = response.body().string();
 
-                    String htmlBody = response.body().string();
-                    ArrayList<StateData> datas = FAMAPriceDataParser.parse(htmlBody, CommodityDataPresenter.this);
-                    stateIds.clear();
-                    stateDataHashMap.clear();
-                    for (final StateData stateData : datas) {
-                        stateIds.add(stateData.getCentreName());
-                        stateDataHashMap.put(stateData.getCentreName(), stateData);
+                } else if (response.code() == 504) {
+                    Response cacheResponse = response.cacheResponse();
+                    if (cacheResponse != null && cacheResponse.body().contentLength() > 0)
+                        htmlBody = cacheResponse.body().string();
+                } else {
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(appContext, "Please connect to internet for latest market data", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }
+
+                if (htmlBody != null && !htmlBody.isEmpty()) {
+
+                    final ArrayList<StateData> datas = FAMAPriceDataParser.parse(htmlBody, CommodityDataPresenter.this);
+                    if (datas.size() > 0) {
+                        stateIds.clear();
+                        stateDataHashMap.clear();
+                        for (final StateData stateData : datas) {
+                            stateIds.add(stateData.getCentreName());
+                            stateDataHashMap.put(stateData.getCentreName(), stateData);
+                        }
+                        notifyDataUpdated();
+                        return;
                     }
 
-                    notifyDataUpdated();
-                } else notifyErrors();
+                }
+
+                notifyErrors();
             }
         });
     }
