@@ -54,6 +54,11 @@ public class CommodityDataPresenter implements FAMAPriceDataParser.FailureListen
     }
 
     private void executeRequest(String url) {
+
+        for (final Listener listener : mListeners) {
+            listener.onDataPreload();
+        }
+
         if (!NetworkUtils.isConnected(appContext)) {
             Toast.makeText(appContext, "Not connected to internet", Toast.LENGTH_SHORT).show();
             return;
@@ -110,6 +115,12 @@ public class CommodityDataPresenter implements FAMAPriceDataParser.FailureListen
     }
 
     public interface Listener {
+
+        /**
+         * Called on UI thread before actual loading begins
+         */
+        void onDataPreload();
+
         void onDataUpdated();
 
         void onDataError();
