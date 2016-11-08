@@ -34,17 +34,6 @@
             android:layout_weight="1"
             app:cardElevation="4dp">
 
-            <android.support.v4.widget.ContentLoadingProgressBar
-                android:id="@+id/mainProgressBar"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="8dp"
-                android:layout_marginRight="8dp"
-                android:indeterminate="true"
-                android:visibility="gone"
-                tools:visibility="visible" />
-
             <android.support.v4.widget.SwipeRefreshLayout
                 android:id="@+id/swipeRefreshContainer"
                 android:layout_width="match_parent"
@@ -56,6 +45,19 @@
                     android:layout_height="match_parent"
                     android:clipToPadding="false" />
             </android.support.v4.widget.SwipeRefreshLayout>
+
+
+            <TextView
+                android:id="@+id/swipeGuide"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:drawableTop="@color/colorPrimaryDark"
+                android:fontFamily="sans-serif-light"
+                android:text="Swipe down to refresh"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
         </android.support.v7.widget.CardView>
     </LinearLayout>

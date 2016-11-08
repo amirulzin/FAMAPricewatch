@@ -10,6 +10,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.mynation.famapricewatch.R;
 import com.mynation.famapricewatch.data.Commodity;
@@ -82,7 +83,9 @@ public class HomeActivity extends AppCompatActivity implements CommodityDataPres
 
     @Override
     public void onDataPreload() {
-
+        TextView swipeGuide = homeBinding.swipeGuide;
+        if (swipeGuide.getVisibility() == View.VISIBLE)
+            swipeGuide.setVisibility(View.GONE);
     }
 
     @Override
@@ -92,7 +95,11 @@ public class HomeActivity extends AppCompatActivity implements CommodityDataPres
 
     @Override
     public void onDataError() {
-
+        if (dataPresenter.getStateDatas().isEmpty()) {
+            TextView swipeGuide = homeBinding.swipeGuide;
+            if (swipeGuide.getVisibility() == View.GONE)
+                swipeGuide.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
