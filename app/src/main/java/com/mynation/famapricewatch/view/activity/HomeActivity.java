@@ -6,10 +6,10 @@ import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 
 import com.mynation.famapricewatch.R;
@@ -30,6 +30,7 @@ public class HomeActivity extends AppCompatActivity implements CommodityDataPres
     private ActivityHomeBinding homeBinding;
     private StateDataAdapter recyclerAdapter;
     private ArrayAdapter<String> spinnerAdapter;
+    private ProgressPresenter progressPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +38,7 @@ public class HomeActivity extends AppCompatActivity implements CommodityDataPres
         homeBinding = DataBindingUtil.setContentView(this, R.layout.activity_home);
         dataPresenter = new CommodityDataPresenter(getApplicationContext());
         uiPresenter = new CommodityUIPresenter();
-
+        progressPresenter = new ProgressPresenter(homeBinding.mainProgressBar);
         //Recycler
         RecyclerView recyclerView = homeBinding.mainItemsRV;
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
@@ -67,8 +68,11 @@ public class HomeActivity extends AppCompatActivity implements CommodityDataPres
             }
         });
 
-        //spinnerAdapter.notifyDataSetChanged();
-        Log.e(getClass().getSimpleName(), "Spinner count " + spinnerAdapter.getCount());
+    }
+
+    @Override
+    public void onDataPreload() {
+
     }
 
     @Override
@@ -77,9 +81,6 @@ public class HomeActivity extends AppCompatActivity implements CommodityDataPres
         handler.post(new Runnable() {
             @Override
             public void run() {
-                //Spinner
-//                spinnerAdapter = new ArrayAdapter<>(HomeActivity.this, R.layout.spinner_header, R.id.spinnerTextHeader, dataPresenter.getStateIds());
-//                homeBinding.topSpinner.setAdapter(spinnerAdapter);
                 spinnerAdapter.notifyDataSetChanged();
             }
         });
@@ -100,6 +101,34 @@ public class HomeActivity extends AppCompatActivity implements CommodityDataPres
     protected void onPause() {
         dataPresenter.removeListener(this);
         super.onPause();
+    }
+
+    private static final class ProgressPresenter implements CommodityDataPresenter.Listener {
+        private final ProgressBar progressBar;
+
+        public <V extends ProgressBar> ProgressPresenter(V progressBar) {
+            this.progressBar = progressBar;
+        }
+
+        @Override
+        public void onDataPreload() {
+            startLoadingIndeterminately();
+        }
+
+        @Override
+        public void onDataUpdated() {
+            progressBar.setVisibility(View.GONE);
+        }
+
+        public void startLoadingIndeterminately() {
+            if (progressBar.getVisibility() != View.VISIBLE)
+                progressBar.setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        public void onDataError() {
+            progressBar.setVisibility(View.GONE);
+        }
     }
 
 }

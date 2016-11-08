@@ -42,6 +42,11 @@ public final class StateDataAdapter extends BindingItemAdapter<Commodity> implem
     }
 
     @Override
+    public void onDataPreload() {
+
+    }
+
+    @Override
     public void onDataUpdated() {
         if (init) {
             init = false;
